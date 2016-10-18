@@ -4,20 +4,29 @@ import DataList       from './components/DataList'
 import DataListOption from './components/DataListOption'
 import layout         from './styles/react-datalist.styl'
 
-export default class ReactDataList extends React.Component {
-    constructor(props) {
-        super(props)
-        this.state = {
-            filter   : props.initialFilter || props.defaultValue || '',
+const native = !!('list' in document.createElement('input')) && !!(document.createElement('datalist') && window.HTMLDataListElement)
+
+export const ReactDataList = React.createClass({
+    getInitialState() {
+        return {
+            filter   : this.props.defaultValue || '',
             hide     : true,
             selected : false,
-            support  : !!('list' in document.createElement('input')) && !!(document.createElement('datalist') && window.HTMLDataListElement)
+            support  : native
         }
-    }
+    },
+    getDefaultProps() {
+        return {
+            options     : [],
+            type        : 'text',
+            blurTimeout : 200
+        }
+    },
     render() {
-        var options      = this.filterOptions(this.props.options, this.state.filter, this.useNative())
+        var options      = this.filterOptions(this.props.options, this.state.filter, native)
         var extraClasses = this.props.className? ' ' + this.props.className: '';
-        var layoutstyle  = (!this.useNative() && this.props.includeLayoutStyle) ? <style>{layout}</style> : null
+        var layoutstyle  = (!native) ? <style>{layout}</style> : null
+
         return (
             <div className="react-datalist-container">
                 {layoutstyle}
@@ -27,80 +36,92 @@ export default class ReactDataList extends React.Component {
                         value={this.state.filter}
                         className={"react-datalist-input"+extraClasses}
                         placeholder={this.props.placeholder}
-                        onBlur={this.handleInputBlur.bind(this)}
-                        onKeyUp={this.handleInputKeyUp.bind(this)}
-                        onClick={this.handleInputClick.bind(this)}
-                        onChange={this.handleInputChange.bind(this)}
-                        onKeyDown={this.handleInputKeyDown.bind(this)}
+                        onBlur={this.handleInputBlur}
+                        onKeyUp={this.handleInputKeyUp}
+                        onClick={this.handleInputClick}
+                        onChange={this.handleInputChange}
+                        onKeyDown={this.handleInputKeyDown}
                 />
                 <DataList ref="theDatalist"
                     id={this.props.list}
                     hide={this.state.hide}
                     filter={this.state.filter}
-                    select={this.selectFilteredOption.bind(this)}
+                    select={this.selectFilteredOption}
                     options={options}
                     selected={this.state.selected}
-                    useNative={this.useNative()}
+                    useNative={native}
                 />
             </div>
         )
-    }
+    },
     handleInputBlur(event) {
-        if (this.props.hideOptionsOnBlur) {
-            setTimeout(function() {
-                this.setState({ hide : true })
-            }.bind(this),this.props.blurTimeout)
+        if (!native) {
+            setTimeout(() => this.setState({ hide : true }), this.props.blurTimeout)
         }
-        if (typeof this.props.onInputBlur === 'function') this.props.onInputBlur(event)
-    }
+        if (typeof this.props.onBlur === 'function') this.props.onBlur(event)
+    },
     handleInputClick(event) {
-        this.setState({ hide : false })
-    }
+        if (!native) {
+            this.setState({ hide : false })
+        }
+        if (typeof this.props.onClick === 'function') this.props.onClick(event)
+    },
     handleInputChange(event) {
-        this.setState({ 
-            filter   : event.target.value,
-            selected : false,
-            hide     : false
-        })
-        if (typeof this.props.onInputChange === 'function') this.props.onInputChange(event)
-    }
+
+        let newState = { filter: event.target.value };
+
+        if (!native) {
+            newState.selected = false;
+            newState.hide = false;
+        }
+
+        this.setState(newState);
+        if (typeof this.props.onChange === 'function') this.props.onChange(event)
+    },
     handleInputKeyDown(event) {
-        switch(event.which) {
-            case 40:
-                // DOWN Arrow
-                var newSelectedIndex  = this.state.selected === false ? 0 : this.state.selected + 1
-                var availableOptions  = this.filterOptions(this.props.options, this.state.filter, this.useNative())
-                if (newSelectedIndex >= availableOptions.length) newSelectedIndex = availableOptions.length - 1
-                this.setState({
-                    selected : newSelectedIndex,
-                    hide     : false
-                })
-                break
-            case 38:
-                // UP arrow
-                var newSelectedIndex = this.state.selected > 0 ? this.state.selected - 1 : 0
-                this.setState({selected : newSelectedIndex})
-                break
-            case 13:
-                // ENTER
-                if (typeof this.state.selected === 'number') { this.selectFilteredOption(this.state.selected) }
-                else { this.selectOption(event.target.value) }
-                break
+        if (!native) {
+            switch(event.which) {
+                case 40:
+                    // DOWN Arrow
+                    var newSelectedIndex  = this.state.selected === false ? 0 : this.state.selected + 1
+                    var availableOptions  = this.filterOptions(this.props.options, this.state.filter, native)
+                    if (newSelectedIndex >= availableOptions.length) newSelectedIndex = availableOptions.length - 1
+                    this.setState({
+                        selected : newSelectedIndex,
+                        hide     : false
+                    })
+                    return
+                case 38:
+                    // UP arrow
+                    var newSelectedIndex = this.state.selected > 0 ? this.state.selected - 1 : 0
+                    this.setState({selected : newSelectedIndex})
+                    return
+                case 13:
+                    // ENTER
+                    if (!this.state.hide) {
+                        if (typeof this.state.selected === 'number') {
+                            this.selectFilteredOption(this.state.selected)
+                        }
+                        else {
+                            this.selectOption(event.target.value)
+                        }
+                        return
+                    }
+            }
+            if (typeof this.props.onKeyDown === 'function') this.props.onKeyDown(event)
         }
-    }
+    },
     handleInputKeyUp(event) {
-        if (!this.props.hideOptionsOnEsc) return
-        switch(event.which) {
-            case 27:
-                // ESC
-                this.setState({
-                    selected : false,
-                    hide     : true,
-                    filter   : this.state.hide ? "" : this.state.filter
-                })
-                break
+        if (!native && this.state.hide && event.which == 27) {
+            // ESC
+            this.setState({
+                selected : false,
+                hide     : true,
+                filter   : this.state.hide ? "" : this.state.filter
+            })
         }
-    }
+        if (typeof this.props.onKeyUp === 'function') this.props.onKeyUp(event)
+    },
     filterOptions(options, filter, support) {
         if (support)        return options
         if (!filter)        return options
@@ -109,10 +130,10 @@ export default class ReactDataList extends React.Component {
         return options.filter(function(option) {
             return option.toLowerCase().indexOf(filter.toLowerCase()) >= 0
         })
-    }
+    },
     selectFilteredOption(index) {
-        this.selectOption(this.filterOptions(this.props.options, this.state.filter, this.useNative())[index])
-    }
+        this.selectOption(this.filterOptions(this.props.options, this.state.filter, native)[index])
+    },
     selectOption(value) {
         var selected_option;
         this.props.options.forEach(function(option, index) { if(option.toLowerCase() === value.toLowerCase()) selected_option = option })
@@ -123,12 +144,19 @@ export default class ReactDataList extends React.Component {
             selected : false,
             hide     : true
         })
-    }
-    useNative() {
-        var _native = this.state.support
-        if (this.props.forcePoly) _native = false
-        return _native
-    }
+    },
+    componentDidUpdate(prevProps, prevState) {
+
+        if (!native && prevState.filter !== this.state.filter) {
+
+            let event = new Event('change', { bubbles: true });
+            this.refs.theInput.dispatchEvent(event);
+
+            if (typeof this.props.onChange === 'function') {
+                this.props.onChange(event);
+            }
+        }
+    },
     componentWillMount() {
         if (typeof this.props.getController === 'function') {
             this.props.getController({
@@ -138,14 +166,14 @@ export default class ReactDataList extends React.Component {
                     hide     : this.state.hide,
                     filter   : this.state.filter,
                     selected : this.state.selected,
-                    options  : this.filterOptions(this.props.options, this.state.filter, this.useNative())
+                    options  : this.filterOptions(this.props.options, this.state.filter, native)
                 }}.bind(this),
                 setState      : function(state,callback) { this.setState(state, callback) }.bind(this)
             })
         }
-    }
+    },
     componentDidMount() {
-        if (this.useNative()) return
+        if (native) return
         if (this.props.autoPosition === false) return
 
         /** POSITION **/
@@ -160,10 +188,9 @@ export default class ReactDataList extends React.Component {
             _datalist.style.position = 'absolute'
             _datalist.style.top      = pos[0] + _input.offsetHeight
             _datalist.style.left     = pos[1]
-            _datalist.style.width    = (_input.offsetWidth - 2) + 'px'            
+            _datalist.style.minWidth = (_input.offsetWidth - 2) + 'px'
         }.bind(this),50)
-
-    }
+    },
     findPos(element) {
       if (element) {
         var parentPos = this.findPos(element.offsetParent);
@@ -172,11 +199,4 @@ export default class ReactDataList extends React.Component {
         return [0,0];
       }
     }
-}
-ReactDataList.defaultProps = {
-    type               : 'text',
-    blurTimeout        : 200,
-    includeLayoutStyle : true, 
-    hideOptionsOnBlur  : true,
-    hideOptionsOnEsc   : true
-}
+});
