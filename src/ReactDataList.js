@@ -22,6 +22,7 @@ export default class ReactDataList extends React.Component {
             <div className="react-datalist-container">
                 {layoutstyle}
                 <input ref="theInput"
+                        type={this.props.type}
                         list={this.props.list}
                         value={this.state.filter}
                         className={"react-datalist-input"+extraClasses}
@@ -173,9 +174,9 @@ export default class ReactDataList extends React.Component {
     }
 }
 ReactDataList.defaultProps = {
+    type               : 'text',
     blurTimeout        : 200,
     includeLayoutStyle : true, 
     hideOptionsOnBlur  : true,
     hideOptionsOnEsc   : true
 }
-
