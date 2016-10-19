@@ -31,6 +31,7 @@ export const ReactDataList = React.createClass({
             <div className="react-datalist-container">
                 {layoutstyle}
                 <input ref="theInput"
+                        id={this.props.id}
                         type={this.props.type}
                         list={this.props.list}
                         value={this.state.filter}
