@@ -1,6 +1,6 @@
 {
   "name": "react-datalist",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "A <datalist> polyfill for reactjs",
   "main": "./lib/ReactDataList",
   "scripts": {

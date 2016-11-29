@@ -129,7 +129,8 @@ export const ReactDataList = React.createClass({
         if (filter === '')  return options
         if (!options)       return []
         return options.filter(function(option) {
-            return option.toLowerCase().indexOf(filter.toLowerCase()) >= 0
+            var normalised_option = (typeof option === 'string') ? option.toLowerCase() : '';
+            return normalised_option.toLowerCase().indexOf(filter.toLowerCase()) >= 0;
         })
     },
     selectFilteredOption(index) {
@@ -137,8 +138,18 @@ export const ReactDataList = React.createClass({
     },
     selectOption(value) {
         var selected_option;
-        this.props.options.forEach(function(option, index) { if(option.toLowerCase() === value.toLowerCase()) selected_option = option })
-        if (typeof selected_option === 'undefined') return
+        var lowercase_value = (typeof value === 'string') ? value.toLowerCase() : '';
+        this.props.options.forEach(function(option) {
+            if (typeof option === 'string') {
+                if (option.toLowerCase() === lowercase_value) {
+                    selected_option = option;
+                }
+            }
+            else if (option === null && lowercase_value === '') {
+                selected_option = '';
+            }
+        });
+        if (typeof selected_option === 'undefined') return;
         if (typeof this.props.onOptionSelected === 'function') this.props.onOptionSelected(selected_option)
         this.setState({
             filter   : selected_option,
