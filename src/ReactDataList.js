@@ -6,22 +6,20 @@ import layout         from './styles/react-datalist.styl'
 
 const native = !!('list' in document.createElement('input')) && !!(document.createElement('datalist') && window.HTMLDataListElement)
 
-export const ReactDataList = React.createClass({
-    getInitialState() {
-        return {
-            filter   : this.props.defaultValue || '',
-            hide     : true,
-            selected : false,
-            support  : native
-        }
-    },
-    getDefaultProps() {
-        return {
-            options     : [],
-            type        : 'text',
-            blurTimeout : 200
-        }
-    },
+export class ReactDataList extends React.Component {
+    static defaultProps = {
+        options     : [],
+        type        : 'text',
+        blurTimeout : 200
+    };
+
+    state = {
+        filter   : this.props.defaultValue || '',
+        hide     : true,
+        selected : false,
+        support  : native
+    };
+
     render() {
         var options      = this.filterOptions(this.props.options, this.state.filter, native)
         var extraClasses = this.props.className? ' ' + this.props.className: '';
@@ -54,20 +52,23 @@ export const ReactDataList = React.createClass({
                 />
             </div>
         )
-    },
-    handleInputBlur(event) {
+    }
+
+    handleInputBlur = (event) => {
         if (!native) {
             setTimeout(() => this.setState({ hide : true }), this.props.blurTimeout)
         }
         if (typeof this.props.onBlur === 'function') this.props.onBlur(event)
-    },
-    handleInputClick(event) {
+    };
+
+    handleInputClick = (event) => {
         if (!native) {
             this.setState({ hide : false })
         }
         if (typeof this.props.onClick === 'function') this.props.onClick(event)
-    },
-    handleInputChange(event) {
+    };
+
+    handleInputChange = (event) => {
 
         let newState = { filter: event.target.value };
 
@@ -78,8 +79,9 @@ export const ReactDataList = React.createClass({
 
         this.setState(newState);
         if (typeof this.props.onChange === 'function') this.props.onChange(event)
-    },
-    handleInputKeyDown(event) {
+    };
+
+    handleInputKeyDown = (event) => {
         if (!native) {
             switch(event.which) {
                 case 40:
@@ -111,8 +113,9 @@ export const ReactDataList = React.createClass({
             }
             if (typeof this.props.onKeyDown === 'function') this.props.onKeyDown(event)
         }
-    },
-    handleInputKeyUp(event) {
+    };
+
+    handleInputKeyUp = (event) => {
         if (!native && this.state.hide && event.which == 27) {
             // ESC
             this.setState({
@@ -122,8 +125,9 @@ export const ReactDataList = React.createClass({
             })
         }
         if (typeof this.props.onKeyUp === 'function') this.props.onKeyUp(event)
-    },
-    filterOptions(options, filter, support) {
+    };
+
+    filterOptions = (options, filter, support) => {
         if (support)        return options
         if (!filter)        return options
         if (filter === '')  return options
@@ -132,11 +136,13 @@ export const ReactDataList = React.createClass({
             var normalised_option = (typeof option === 'string') ? option.toLowerCase() : '';
             return normalised_option.toLowerCase().indexOf(filter.toLowerCase()) >= 0;
         })
-    },
-    selectFilteredOption(index) {
+    };
+
+    selectFilteredOption = (index) => {
         this.selectOption(this.filterOptions(this.props.options, this.state.filter, native)[index])
-    },
-    selectOption(value) {
+    };
+
+    selectOption = (value) => {
         var selected_option;
         var lowercase_value = (typeof value === 'string') ? value.toLowerCase() : '';
         this.props.options.forEach(function(option) {
@@ -156,7 +162,8 @@ export const ReactDataList = React.createClass({
             selected : false,
             hide     : true
         })
-    },
+    };
+
     componentDidUpdate(prevProps, prevState) {
 
         if (!native && prevState.filter !== this.state.filter) {
@@ -168,7 +175,8 @@ export const ReactDataList = React.createClass({
                 this.props.onChange(event);
             }
         }
-    },
+    }
+
     componentWillMount() {
         if (typeof this.props.getController === 'function') {
             this.props.getController({
@@ -183,7 +191,8 @@ export const ReactDataList = React.createClass({
                 setState      : function(state,callback) { this.setState(state, callback) }.bind(this)
             })
         }
-    },
+    }
+
     componentDidMount() {
         if (native) return
         if (this.props.autoPosition === false) return
@@ -202,13 +211,14 @@ export const ReactDataList = React.createClass({
             _datalist.style.left     = pos[1]
             _datalist.style.minWidth = (_input.offsetWidth - 2) + 'px'
         }.bind(this),50)
-    },
-    findPos(element) {
+    }
+
+    findPos = (element) => {
       if (element) {
         var parentPos = this.findPos(element.offsetParent);
         return [ parentPos[0] + element.offsetTop, parentPos[1] + element.offsetLeft]
       } else {
         return [0,0];
       }
-    }
-});
+    };
+}
