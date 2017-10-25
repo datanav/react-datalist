@@ -176,7 +176,7 @@ export class ReactDataList extends React.Component {
             }
         }
 
-        if (this.props.defaultValue !== prevState.defaultValue) {
+        if (this.props.defaultValue !== prevProps.defaultValue) {
           this.setState({ filter: this.props.defaultValue || ''});
         }
     }
