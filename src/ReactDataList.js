@@ -175,6 +175,10 @@ export class ReactDataList extends React.Component {
                 this.props.onChange(event);
             }
         }
+
+        if (this.props.defaultValue !== prevState.defaultValue) {
+          this.setState({ filter: this.props.defaultValue || ''});
+        }
     }
 
     componentWillMount() {
